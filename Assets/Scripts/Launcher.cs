@@ -63,7 +63,7 @@ public class Launcher : MonoBehaviourPunCallbacks
     // Helper Methods
     public void SetPlayerName(string name)
     {
-        playerName = name;
+        playerName = playerNameField.text;
     }
 
     public void SetRoomName(string name)
@@ -84,7 +84,7 @@ public class Launcher : MonoBehaviourPunCallbacks
         if (PhotonNetwork.IsConnected)
         {
             PhotonNetwork.LocalPlayer.NickName = playerName; //1
-            Debug.Log("PhotonNetwork.IsConnected! | Trying to Create/Join Room " + roomNameField.text);
+            Debug.Log("PhotonNetwork.IsConnected! | Trying to Create/Join Room " + roomNameField.text + playerName);
             RoomOptions roomOptions = new RoomOptions(); //2
             TypedLobby typedLobby = new TypedLobby(roomName, LobbyType.Default); //3
             PhotonNetwork.JoinOrCreateRoom(roomName, roomOptions, typedLobby); //4
