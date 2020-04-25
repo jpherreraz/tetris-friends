@@ -14,38 +14,44 @@ public class TetrisBlock : MonoBehaviour {
     public static int height = 20;
     public static int width = 10;
     public static Transform[,] grid = new Transform[width, height];
-    // private int score = PhotonNetwork.LocalPlayer.GetScore();
     public static int bottom = 0;
     public static bool loser = false;
+    public static bool readyForJunk = false;
 
     // Start is called before the first frame update
     void Start() {
-      PhotonNetwork.AutomaticallySyncScene = true;
+        PhotonNetwork.AutomaticallySyncScene = true;
     }
 
     public void GameOver() {
-      loser = true;
-      if(loser == true){
-      SceneManager.LoadScene("GameOver");
-      }
+        loser = true;
+        if (loser == true) {
+            SceneManager.LoadScene("GameOver");
+        }
     }
 
-
+    public static void ReceiveJunk() {
+        for (int i = 0; i < SendableJunkScript.linesCleared; i++) {
+            RowUp();
+        }
+    }
 
     // Update is called once per frame
     void Update() {
 
         float fallTime = Input.GetKey(KeyCode.DownArrow) ? idleFallTime / 10 : idleFallTime;
-        float blocksDown = transform.position.y;
 
         void CheckForLines() {
-        // This function checks for rows that are completed
-            for (int i = height-1; i >= 0; i--) {
-            // Go through entire game grid and delete any lines
-                if (HasLine(i))
-                {
+            // This function checks for rows that are completed
+            for (int i = height - 1; i >= 0; i--) {
+                // Go through entire game grid and delete any lines
+                if (HasLine(i)) {
                     DeleteLine(i);
                     RowDown(i);
+                    PhotonView photonView = PhotonView.Get(this);
+                    photonView.RPC("LinesCleared", RpcTarget.Others);
+                    PhotonView photonView2 = GameObject.Find("SendableJunkSpawner").GetComponent<PhotonView>();
+                    photonView2.RPC("LinesCleared", RpcTarget.Others);
                 }
             }
         }
@@ -77,58 +83,19 @@ public class TetrisBlock : MonoBehaviour {
                 }
             }
         }
-
-        void RowUp() {
-          bottom += 1;
-          for (int i = height-1; i >= 0; i--){
-            for (int j = 0; j < width; j++) {
-              if (grid[j,i] != null) {
-                grid[j, i].transform.position += new Vector3(0, 1, 0);
-                grid[j, i+1] = grid[j, i];
-                grid[j, i] = null;
-              }
-            }
-          }
-        }
-
-
-        void AddToGrid() {
-            foreach (Transform children in transform) {
-                int roundedX = Mathf.RoundToInt(children.transform.position.x);
-                int roundedY = Mathf.RoundToInt(children.transform.position.y);
-
-                grid[roundedX, roundedY] = children;
-            }
-        }
-        bool ValidMove() {
-            foreach (Transform children in transform) {
-                int roundedX = Mathf.RoundToInt(children.transform.position.x);
-                int roundedY = Mathf.RoundToInt(children.transform.position.y);
-
-                if (roundedX < 0 || roundedX >= width || roundedY < bottom || roundedY >= 20) {
-                    return false;
-                }
-
-                if (grid[roundedX, roundedY] != null) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        bool AboveGame() {
-            foreach (Transform children in transform) {
-                int roundedY = Mathf.RoundToInt(children.transform.position.y);
-
-                if (roundedY >= 20) {
-                  return true;
-                }
-            }
-            return false;
-        }
-
         if (Input.GetKeyDown(KeyCode.Y)) {
+            //void Junk() {
+            bottom += 1;
             RowUp();
         }
+
+        //if (Input.GetKeyDown(KeyCode.T)) {
+        //void ReceiveJunk() {
+        //    for (int i = 0; i < SendableJunkScript.linesCleared; i++) {
+        //        RowUp();
+        //    }
+        //}
+
 
         if (Input.GetKeyDown(KeyCode.LeftArrow)) {
             transform.position += new Vector3(-1, 0, 0);
@@ -155,16 +122,14 @@ public class TetrisBlock : MonoBehaviour {
 
         Vector3 previousPosition = transform.position;
 
-        if (!ValidMove()){
-          transform.position += new Vector3(0, 1, 0);
-          if (AboveGame()){
-            //PhotonNetwork.LocalPlayer.SetScore(1);
-            //if (score == 1) {
-                //Debug.Log("Player score is set to " + PhotonNetwork.LocalPlayer.GetScore());
-                GameOver();
-            //}
-          }
-          transform.position = previousPosition;
+        for (int i = 0; i < 3; i++) {
+            if (!ValidMove()) {
+                transform.position += new Vector3(0, 1, 0);
+                if (AboveGame()) {
+                    GameOver();
+                }
+                transform.position = previousPosition;
+            }
         }
         for (int i = 0; i < 3; i++) {
             if (!ValidMove()) {
@@ -196,5 +161,58 @@ public class TetrisBlock : MonoBehaviour {
                 FindObjectOfType<Spawner>().NewTetrimino();
             }
         }
+    }
+
+    private bool AboveGame() {
+        foreach (Transform children in transform) {
+            int roundedY = Mathf.RoundToInt(children.transform.position.y);
+
+            if (roundedY >= 20) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private bool ValidMove() {
+        foreach (Transform children in transform) {
+            int roundedX = Mathf.RoundToInt(children.transform.position.x);
+            int roundedY = Mathf.RoundToInt(children.transform.position.y);
+
+            if (roundedX < 0 || roundedX >= width || roundedY < bottom || roundedY >= 20) {
+                return false;
+            }
+
+            if (grid[roundedX, roundedY] != null) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void AddToGrid() {
+        foreach (Transform children in transform) {
+            int roundedX = Mathf.RoundToInt(children.transform.position.x);
+            int roundedY = Mathf.RoundToInt(children.transform.position.y);
+
+            grid[roundedX, roundedY] = children;
+        }
+    }
+
+    private static void RowUp() {
+        for (int i = height - 1; i >= 0; i--) {
+            for (int j = 0; j < width; j++) {
+                if (grid[j, i] != null) {
+                    grid[j, i].transform.position += new Vector3(0, 1, 0);
+                    grid[j, i + 1] = grid[j, i];
+                    grid[j, i] = null;
+                }
+            }
+        }
+    }
+
+    [PunRPC]
+    void LinesCleared() {
+        TetrisBlock.ReceiveJunk();
     }
 }
