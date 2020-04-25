@@ -1,11 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using Photon.Pun;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
-using Photon.Pun;
-using Photon.Realtime;
-using Photon.Pun.UtilityScripts;
 
 public class TetrisBlock : MonoBehaviour {
     public Vector3 rotationPoint;
@@ -15,23 +10,25 @@ public class TetrisBlock : MonoBehaviour {
     public static int width = 10;
     public static Transform[,] grid = new Transform[width, height];
     public static int bottom = 0;
-    public static bool loser = false;
+    public static bool loser = true;
     public static bool readyForJunk = false;
+    public static int linesCleared = 0;
+    public static bool blockIsDown = false;
 
     // Start is called before the first frame update
+
     void Start() {
-        PhotonNetwork.AutomaticallySyncScene = true;
     }
 
     public void GameOver() {
         loser = true;
-        if (loser == true) {
-            SceneManager.LoadScene("GameOver");
-        }
+        PhotonView photonView3 = PhotonView.Get(this);
+        photonView3.RPC("Winner", RpcTarget.Others);
+        SceneManager.LoadScene("GameOver");
     }
 
     public static void ReceiveJunk() {
-        for (int i = 0; i < SendableJunkScript.linesCleared; i++) {
+        for (int i = 0; i < linesCleared; i++) {
             RowUp();
         }
     }
@@ -75,7 +72,7 @@ public class TetrisBlock : MonoBehaviour {
         void RowDown(int i) {
             for (int y = i; y < height; y++) {
                 for (int j = 0; j < width; j++) {
-                    if (grid[j,y] != null) {
+                    if (grid[j, y] != null) {
                         grid[j, y - 1] = grid[j, y];
                         grid[j, y] = null;
                         grid[j, y - 1].transform.position += new Vector3(0, -1, 0);
@@ -105,12 +102,12 @@ public class TetrisBlock : MonoBehaviour {
         }
         if (Input.GetKeyDown(KeyCode.Space)) {
             idleFallTime = 0f;
-            for (int i = 0; i < 20; i++){
-              transform.position += new Vector3(0,-1,0);
-              if (!ValidMove()) {
-                transform.position += new Vector3(0,1,0);
-                return;
-              }
+            for (int i = 0; i < 20; i++) {
+                transform.position += new Vector3(0, -1, 0);
+                if (!ValidMove()) {
+                    transform.position += new Vector3(0, 1, 0);
+                    return;
+                }
             }
         }
         if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.C)) {
@@ -159,6 +156,10 @@ public class TetrisBlock : MonoBehaviour {
                 CheckForLines();
                 this.enabled = false;
                 FindObjectOfType<Spawner>().NewTetrimino();
+                if (linesCleared > 0) {
+                    blockIsDown = true;
+                    ReceiveJunk();
+                }
             }
         }
     }
@@ -213,6 +214,14 @@ public class TetrisBlock : MonoBehaviour {
 
     [PunRPC]
     void LinesCleared() {
-        TetrisBlock.ReceiveJunk();
+        //TetrisBlock.ReceiveJunk();
+        TetrisBlock.linesCleared += 1;
+    }
+
+    [PunRPC]
+    void Winner() {
+        TetrisBlock.loser = false;
+        SceneManager.LoadScene("GameOver");
+        Debug.Log("hello");
     }
 }

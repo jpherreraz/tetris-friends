@@ -30,7 +30,6 @@ public class GameOver : MonoBehaviourPunCallbacks
 
   void Start() {
     updateText();
-    Debug.Log(PhotonNetwork.LocalPlayer.GetScore());
     PhotonNetwork.Disconnect();
   }
 

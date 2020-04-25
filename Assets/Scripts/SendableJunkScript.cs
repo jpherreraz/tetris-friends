@@ -12,7 +12,6 @@ public class SendableJunkScript : MonoBehaviour {
 
     public void NewLine() {
         int count = 0;
-        linesCleared = Random.Range(1, 1);
         int randomNumber = Random.Range(0, SendableJunk.Length);
         for (int i = 0; i < linesCleared; i++) {
             Instantiate(SendableJunk[randomNumber], new Vector3(0, TetrisBlock.bottom + count, 0), Quaternion.identity);
@@ -21,12 +20,20 @@ public class SendableJunkScript : MonoBehaviour {
     }
 
     void ReceiveJunk() {
-        //if (Input.GetKeyDown(KeyCode.T)) {
-            NewLine();
-        //}
+        NewLine();
     }
+    private void Update() {
+        if (TetrisBlock.blockIsDown == true) {
+            linesCleared = TetrisBlock.linesCleared;
+            NewLine();
+            TetrisBlock.blockIsDown = false;
+            TetrisBlock.linesCleared = 0;
+            linesCleared = 0;
+        }    
+    }
+
     [PunRPC]
     void LinesCleared() {
-        ReceiveJunk();
+        //ReceiveJunk();
     }
 }
