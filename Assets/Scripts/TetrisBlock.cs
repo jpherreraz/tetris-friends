@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+using Photon.Pun;
+using Photon.Realtime;
+using Photon.Pun.UtilityScripts;
+
 public class TetrisBlock : MonoBehaviour {
     public Vector3 rotationPoint;
     private float previousTime;
@@ -10,14 +14,23 @@ public class TetrisBlock : MonoBehaviour {
     public static int height = 20;
     public static int width = 10;
     public static Transform[,] grid = new Transform[width, height];
+    // private int score = PhotonNetwork.LocalPlayer.GetScore();
+    public static int bottom = 0;
+    public static bool loser = false;
 
     // Start is called before the first frame update
     void Start() {
+      PhotonNetwork.AutomaticallySyncScene = true;
     }
 
     public void GameOver() {
+      loser = true;
+      if(loser == true){
       SceneManager.LoadScene("GameOver");
+      }
     }
+
+
 
     // Update is called once per frame
     void Update() {
@@ -65,6 +78,20 @@ public class TetrisBlock : MonoBehaviour {
             }
         }
 
+        void RowUp() {
+          bottom += 1;
+          for (int i = height-1; i >= 0; i--){
+            for (int j = 0; j < width; j++) {
+              if (grid[j,i] != null) {
+                grid[j, i].transform.position += new Vector3(0, 1, 0);
+                grid[j, i+1] = grid[j, i];
+                grid[j, i] = null;
+              }
+            }
+          }
+        }
+
+
         void AddToGrid() {
             foreach (Transform children in transform) {
                 int roundedX = Mathf.RoundToInt(children.transform.position.x);
@@ -78,7 +105,7 @@ public class TetrisBlock : MonoBehaviour {
                 int roundedX = Mathf.RoundToInt(children.transform.position.x);
                 int roundedY = Mathf.RoundToInt(children.transform.position.y);
 
-                if (roundedX < 0 || roundedX >= width || roundedY < 0 || roundedY >= 20) {
+                if (roundedX < 0 || roundedX >= width || roundedY < bottom || roundedY >= 20) {
                     return false;
                 }
 
@@ -93,15 +120,14 @@ public class TetrisBlock : MonoBehaviour {
                 int roundedY = Mathf.RoundToInt(children.transform.position.y);
 
                 if (roundedY >= 20) {
-                    return true;
+                  return true;
                 }
             }
             return false;
         }
 
-        if (AboveGame()) {
-          GameOver();
-          enabled = false;
+        if (Input.GetKeyDown(KeyCode.Y)) {
+            RowUp();
         }
 
         if (Input.GetKeyDown(KeyCode.LeftArrow)) {
@@ -132,7 +158,11 @@ public class TetrisBlock : MonoBehaviour {
         if (!ValidMove()){
           transform.position += new Vector3(0, 1, 0);
           if (AboveGame()){
-            GameOver();
+            //PhotonNetwork.LocalPlayer.SetScore(1);
+            //if (score == 1) {
+                //Debug.Log("Player score is set to " + PhotonNetwork.LocalPlayer.GetScore());
+                GameOver();
+            //}
           }
           transform.position = previousPosition;
         }
