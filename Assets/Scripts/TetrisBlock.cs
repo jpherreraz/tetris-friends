@@ -6,7 +6,7 @@ public class TetrisBlock : MonoBehaviour {
     public Vector3 rotationPoint;
     private float previousTime;
     public float idleFallTime = .8f;
-    public static int height = 20;
+    public static int height = 21;
     public static int width = 10;
     public static Transform[,] grid = new Transform[width, height];
     public static int bottom = 0;
@@ -18,6 +18,7 @@ public class TetrisBlock : MonoBehaviour {
     // Start is called before the first frame update
 
     void Start() {
+        previousTime = Time.time;
     }
 
     public void GameOver() {
@@ -102,7 +103,7 @@ public class TetrisBlock : MonoBehaviour {
         }
         if (Input.GetKeyDown(KeyCode.Space)) {
             idleFallTime = 0f;
-            for (int i = 0; i < 20; i++) {
+            for (int i = 0; i < height; i++) {
                 transform.position += new Vector3(0, -1, 0);
                 if (!ValidMove()) {
                     transform.position += new Vector3(0, 1, 0);
@@ -168,7 +169,7 @@ public class TetrisBlock : MonoBehaviour {
         foreach (Transform children in transform) {
             int roundedY = Mathf.RoundToInt(children.transform.position.y);
 
-            if (roundedY >= 20) {
+            if (roundedY >= height) {
                 return true;
             }
         }
@@ -180,7 +181,7 @@ public class TetrisBlock : MonoBehaviour {
             int roundedX = Mathf.RoundToInt(children.transform.position.x);
             int roundedY = Mathf.RoundToInt(children.transform.position.y);
 
-            if (roundedX < 0 || roundedX >= width || roundedY < bottom || roundedY >= 20) {
+            if (roundedX < 0 || roundedX >= width || roundedY < bottom || roundedY >= height) {
                 return false;
             }
 
